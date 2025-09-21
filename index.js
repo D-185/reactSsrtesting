@@ -53,31 +53,42 @@ if (!isProduction) {
   }));
 }
 
-app.use('*' , async(req, res) => {
-  const url = req.originalUrl;
+// Add middleware for proper routing
+app.use((req, res, next) => {
+  // Set proper headers for SSR
+  res.setHeader('Content-Type', 'text/html');
+  next();
+});
 
-  let template, render;
+app.get('*', async(req, res) => {
+  try {
+    const url = req.originalUrl;
 
-  if (isProduction) {
-    template = templateHtml;
-    const serverEntry = await import('./dist/server/entry-server.js');
-    render = serverEntry.render;
-  } else {
-    template = await fs.readFile('./src/index.html', 'utf-8');
-    template = await vite.transformIndexHtml(url, template);
-    const serverEntry = await vite.ssrLoadModule('/src/entry-server.jsx');
-    render = serverEntry.render;
+    let template, render;
+
+    if (isProduction) {
+      template = templateHtml;
+      const serverEntry = await import('./dist/server/entry-server.js');
+      render = serverEntry.render;
+    } else {
+      template = await fs.readFile('./src/index.html', 'utf-8');
+      template = await vite.transformIndexHtml(url, template);
+      const serverEntry = await vite.ssrLoadModule('/src/entry-server.jsx');
+      render = serverEntry.render;
+    }
+
+    const { html: appHtml, helmet } = render(url);
+
+    const html = template
+      .replace(`<!--app-html-->`, appHtml)
+      .replace('<!--helmet-title-->', helmet.title.toString())
+      .replace('<!--helmet-meta-->', helmet.meta.toString());
+
+    res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+  } catch (error) {
+    console.error('SSR Error:', error);
+    res.status(500).send('Internal Server Error');
   }
-
-  const { html: appHtml, helmet } = render(url);
-
-  const html = template
-    .replace(`<!--app-html-->`, appHtml)
-    .replace('<!--helmet-title-->', helmet.title.toString())
-    .replace('<!--helmet-meta-->', helmet.meta.toString());
-
-  res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
-
 });
 
 app.listen(port, () => {
