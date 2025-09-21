@@ -4,11 +4,15 @@ import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 
-ReactDOM.hydrateRoot(
-  document.getElementById('root'),
-  <HelmetProvider>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </HelmetProvider>
-);
+// Ensure we're hydrating the existing content
+const container = document.getElementById('root');
+if (container) {
+  ReactDOM.hydrateRoot(
+    container,
+    <HelmetProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </HelmetProvider>
+  );
+}

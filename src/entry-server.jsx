@@ -9,7 +9,7 @@ export function render(url, context) {
 
   const html = ReactDOMServer.renderToString(
     <HelmetProvider context={helmetContext}>
-      <StaticRouter location={url}>
+      <StaticRouter location={url} basename="/">
         <App />
       </StaticRouter>
     </HelmetProvider>
