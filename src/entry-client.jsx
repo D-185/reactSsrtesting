@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 
-// Ensure we're hydrating the existing content
+// Simple hydration without complex context
 const container = document.getElementById('root');
 if (container) {
   ReactDOM.hydrateRoot(

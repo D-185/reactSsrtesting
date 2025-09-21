@@ -1,43 +1,31 @@
 import express from 'express';
 import fs from 'node:fs/promises';
 import { createServer as createViteServer } from 'vite';
+import compression from 'compression';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const port = process.env.PORT || 8081;
-const base = process.env.BASE || '/';
 
-console.log('Environment:', { isProduction, port, base });
+console.log('Environment:', { isProduction, port });
 console.log('Current working directory:', process.cwd());
-console.log('Files in current directory:', await fs.readdir('.'));
 
 let templateHtml, ssrManifest;
 
 if (isProduction) {
   try {
-    console.log('Looking for template at: ./dist/client/index.html');
     templateHtml = await fs.readFile('./dist/client/index.html', 'utf-8');
-    console.log('Template loaded successfully');
+    ssrManifest = await fs.readFile('./dist/client/.vite/ssr-manifest.json', 'utf-8');
+    console.log('Production files loaded successfully');
   } catch (error) {
-    console.error('Error loading template:', error.message);
-    console.log('Files in dist directory:', await fs.readdir('./dist').catch(() => 'dist directory does not exist'));
-    console.log('Files in dist/client directory:', await fs.readdir('./dist/client').catch(() => 'dist/client directory does not exist'));
+    console.error('Error loading production files:', error.message);
     throw error;
   }
-  
-  try {
-    console.log('Looking for SSR manifest at: ./dist/client/.vite/ssr-manifest.json');
-    ssrManifest = await fs.readFile('./dist/client/.vite/ssr-manifest.json', 'utf-8');
-    console.log('SSR manifest loaded successfully');
-  } catch (error) {
-    console.error('Error loading SSR manifest:', error.message);
-    ssrManifest = undefined;
-  }
-} else {
-  templateHtml = '';
-  ssrManifest = undefined;
 }
 
 const app = express();
+
+// Add compression middleware
+app.use(compression());
 
 let vite;
 
@@ -48,19 +36,12 @@ if (!isProduction) {
   });
   app.use(vite.middlewares);
 } else {
-  app.use(express.static('dist/client', {
-    index: false
-  }));
+  // Serve static files
+  app.use('/assets', express.static('dist/client/assets'));
 }
 
-// Add middleware for proper routing
-app.use((req, res, next) => {
-  // Set proper headers for SSR
-  res.setHeader('Content-Type', 'text/html');
-  next();
-});
-
-app.get('*', async(req, res) => {
+// SSR middleware
+app.use('*', async (req, res) => {
   try {
     const url = req.originalUrl;
 
