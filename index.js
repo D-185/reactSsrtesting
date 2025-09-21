@@ -7,7 +7,6 @@ const isProduction = process.env.NODE_ENV === 'production';
 const port = process.env.PORT || 8081;
 
 console.log('Environment:', { isProduction, port });
-console.log('Current working directory:', process.cwd());
 
 let templateHtml, ssrManifest;
 
@@ -40,15 +39,24 @@ if (!isProduction) {
   app.use('/assets', express.static('dist/client/assets'));
 }
 
-// SSR middleware
-app.use('*', async (req, res) => {
+// Define routes like Next.js
+const routes = {
+  '/': 'Dashboard',
+  '/profile': 'Profile', 
+  '/settings': 'Settings'
+};
+
+// Single route handler for all routes
+app.get('*', async (req, res) => {
   try {
     const url = req.originalUrl;
+    const pageName = routes[url] || 'Dashboard';
 
     let template, render;
 
     if (isProduction) {
-      template = templateHtml;
+      // Use source template for SSR placeholders
+      template = await fs.readFile('./src/index.html', 'utf-8');
       const serverEntry = await import('./dist/server/entry-server.js');
       render = serverEntry.render;
     } else {
@@ -58,12 +66,24 @@ app.use('*', async (req, res) => {
       render = serverEntry.render;
     }
 
-    const { html: appHtml, helmet } = render(url);
+    const { html: appHtml, helmet } = render(url, { pageName });
+
+    // Get the correct script path from the built manifest
+    let scriptPath = '/src/entry-client.jsx';
+    if (isProduction) {
+      try {
+        const manifest = JSON.parse(ssrManifest);
+        scriptPath = manifest['src/entry-client.jsx'] || '/assets/index-Pgl2f8E7.js';
+      } catch (e) {
+        scriptPath = '/assets/index-Pgl2f8E7.js';
+      }
+    }
 
     const html = template
       .replace(`<!--app-html-->`, appHtml)
       .replace('<!--helmet-title-->', helmet.title.toString())
-      .replace('<!--helmet-meta-->', helmet.meta.toString());
+      .replace('<!--helmet-meta-->', helmet.meta.toString())
+      .replace('/src/entry-client.jsx', scriptPath);
 
     res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
   } catch (error) {
