@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon index.js",
-    "build": "vite build --outDir dist/client && vite build --outDir dist/server --ssr src/entry-server.jsx",
-    "start": "NODE_ENV=production node index.js"
+    "build": "vite build --outDir ../dist/client && vite build --outDir ../dist/server --ssr entry-server.jsx",
+    "start": "node index.js"
   },
   "author": "",
   "license": "ISC",

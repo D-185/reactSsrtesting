@@ -1,6 +1,5 @@
 import React from 'react';
-import helmetAsync from 'react-helmet-async';
-const { Helmet } = helmetAsync;
+import { Helmet } from 'react-helmet-async';
 
 const Meta = ({ title, description, children }) => {
   return (
