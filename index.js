@@ -11,7 +11,7 @@ const templateHtml = isProduction ?
   '';
 
 const ssrManifest = isProduction ? 
-  await fs.readFile('./dist/client/ssr-manifest.json', 'utf-8') : 
+  await fs.readFile('./dist/client/.vite/ssr-manifest.json', 'utf-8') : 
   undefined;
 
 const app = express();
